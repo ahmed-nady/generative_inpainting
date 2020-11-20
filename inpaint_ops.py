@@ -73,7 +73,7 @@ def gen_deconv(x, cnum, name='upsample', padding='SAME', training=True):
 
     """
     with tf.variable_scope(name):
-        x = resize(x, func=tf.image.resize_nearest_neighbor)
+        x = resize(x, func=tf.image.resize_nearest_neighbor, dynamic=True)
         x = gen_conv(
             x, cnum, 3, 1, name=name+'_conv', padding=padding,
             training=training)
@@ -247,9 +247,10 @@ def resize_mask_like(mask, x):
         tf.Tensor: resized mask
 
     """
-    mask_resize = resize(
-        mask, to_shape=x.get_shape().as_list()[1:3],
-        func=tf.image.resize_nearest_neighbor)
+#     mask_resize = resize(
+#         mask, to_shape=x.get_shape().as_list()[1:3],
+#         func=tf.image.resize_nearest_neighbor)
+    mask_resize =  resize(mask, scale=1./4, dynamic=True)
     return mask_resize
 
 
@@ -286,10 +287,13 @@ def contextual_attention(f, b, mask=None, ksize=3, stride=1, rate=1,
     raw_w = tf.transpose(raw_w, [0, 2, 3, 4, 1])  # transpose to b*k*k*c*hw
     # downscaling foreground option: downscaling both foreground and
     # background for matching and use original background for reconstruction.
-    f = resize(f, scale=1./rate, func=tf.image.resize_nearest_neighbor)
-    b = resize(b, to_shape=[int(raw_int_bs[1]/rate), int(raw_int_bs[2]/rate)], func=tf.image.resize_nearest_neighbor)  # https://github.com/tensorflow/tensorflow/issues/11651
+#     f = resize(f, scale=1./rate, func=tf.image.resize_nearest_neighbor)
+#     b = resize(b, to_shape=[int(raw_int_bs[1]/rate), int(raw_int_bs[2]/rate)], func=tf.image.resize_nearest_neighbor)  # https://github.com/tensorflow/tensorflow/issues/11651
+    f = resize(f, scale=1./rate, func=tf.image.resize_nearest_neighbor, dynamic=True)
+    b = resize(b, scale=1./rate, func=tf.image.resize_nearest_neighbor, dynamic=True)
     if mask is not None:
-        mask = resize(mask, scale=1./rate, func=tf.image.resize_nearest_neighbor)
+        mask = resize(mask, scale=1./rate, func=tf.image.resize_nearest_neighbor, dynamic=True)
+        #mask = resize(mask, scale=1./rate, func=tf.image.resize_nearest_neighbor)
     fs = tf.shape(f)
     int_fs = f.get_shape().as_list()
     f_groups = tf.split(f, int_fs[0], axis=0)
@@ -360,7 +364,8 @@ def contextual_attention(f, b, mask=None, ksize=3, stride=1, rate=1,
     # # case2: visualize which pixels are attended
     # flow = highlight_flow_tf(offsets * tf.cast(mask, tf.int32))
     if rate != 1:
-        flow = resize(flow, scale=rate, func=tf.image.resize_bilinear)
+        flow = resize(flow, scale=rate, func=tf.image.resize_nearest_neighbor, dynamic=True)
+        #flow = resize(flow, scale=rate, func=tf.image.resize_bilinear)
     return y, flow
 
 
