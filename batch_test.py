@@ -29,7 +29,7 @@ parser.add_argument(
 
 if __name__ == "__main__":
     FLAGS = ng.Config('inpaint.yml')
-    ng.get_gpus(1)
+    #ng.get_gpus(1)
     # os.environ['CUDA_VISIBLE_DEVICES'] =''
     args = parser.parse_args()
 
@@ -39,7 +39,7 @@ if __name__ == "__main__":
 
     model = InpaintCAModel()
     input_image_ph = tf.placeholder(
-        tf.float32, shape=(1, args.image_height, args.image_width*2, 3))
+        tf.float32, shape=(1, None, None, 3))
     output = model.build_server_graph(FLAGS, input_image_ph)
     output = (output + 1.) * 127.5
     output = tf.reverse(output, [-1])
@@ -65,8 +65,8 @@ if __name__ == "__main__":
 
         image = cv2.imread(image)
         mask = cv2.imread(mask)
-        image = cv2.resize(image, (args.image_width, args.image_height))
-        mask = cv2.resize(mask, (args.image_width, args.image_height))
+        # image = cv2.resize(image, (args.image_width, args.image_height))
+        # mask = cv2.resize(mask, (args.image_width, args.image_height))
         # cv2.imwrite(out, image*(1-mask/255.) + mask)
         # # continue
         # image = np.zeros((128, 256, 3))
@@ -75,7 +75,7 @@ if __name__ == "__main__":
         assert image.shape == mask.shape
 
         h, w, _ = image.shape
-        grid = 4
+        grid = 8
         image = image[:h//grid*grid, :w//grid*grid, :]
         mask = mask[:h//grid*grid, :w//grid*grid, :]
         print('Shape of image: {}'.format(image.shape))
